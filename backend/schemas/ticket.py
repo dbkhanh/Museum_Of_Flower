@@ -1,14 +1,24 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from backend.models.ticket import TicketType, TicketSubtype
+
 
 class TicketBase(BaseModel):
-    category: str
+    type: TicketType
+    subtype: TicketSubtype
     price: float
     basket_id: Optional[int] = None
 
-class TicketCreate(TicketBase):
-    pass
+class TicketCreate(BaseModel):
+    type: TicketType
+    subtype: TicketSubtype
+    purchase_date: Optional[datetime] = None
+    price: float
+    basket_id: Optional[int] = None
+    
+    class Config:
+        orm_mode = True
 
 class Ticket(TicketBase):
     ticket_id: int
@@ -16,3 +26,5 @@ class Ticket(TicketBase):
 
     class Config:
         from_attributes = True
+
+
