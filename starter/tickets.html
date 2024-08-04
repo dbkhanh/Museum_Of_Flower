@@ -3,13 +3,42 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
     <link href="https://fonts.googleapis.com/css?family=Nunito:200,300,400,700" rel="stylesheet">
-
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
     <link rel="stylesheet" href="app.css">
-
     <title>Museum of Flowers</title>
+    <style>
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5); 
+            z-index: 1040; 
+        }
+
+        .ticket-options {
+            display: none;
+            position: fixed;
+            width: 25%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1050;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,.5);
+        }
+        .ticket-options .close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
     <nav id="mainNavbar" class="navbar navbar-dark navbar-expand-md py-0 fixed-top">
@@ -46,48 +75,95 @@
                     <div class="card-body">
                         <h5 class="card-title">General Admission</h5>
                         <p class="card-text">Experience all the permanent exhibits and seasonal displays. Adults: $20, Children (under 12): $10, Seniors (65+): $15.</p>
-                        <a href="#" class="btn btn-primary add-to-basket">Buy Tickets</a>
+                        <a href="#" class="btn btn-primary add-to-basket" data-ticket-type="General Admission" data-ticket-content='{"Adults": "$20", "Children": "$10", "Seniors": "$15"}'>Buy Tickets</a>
                     </div>
                 </div>
                 <div class="card mb-4">
                     <div class="card-body">
                         <h5 class="card-title">Guided Tour</h5>
                         <p class="card-text">Enjoy a guided tour of the museum with one of our expert guides. Adults: $30, Children (under 12): $20, Seniors (65+): $25.</p>
-                        <a href="#" class="btn btn-primary add-to-basket">Buy Tickets</a>
+                        <a href="#" class="btn btn-primary add-to-basket" data-ticket-type="Guided Tour" data-ticket-content='{"Adults": "$30", "Children": "$20", "Seniors": "$25"}'>Buy Tickets</a>
                     </div>
                 </div>
                 <div class="card mb-4">
                     <div class="card-body">
                         <h5 class="card-title">Annual Pass</h5>
                         <p class="card-text">Become a member and enjoy unlimited visits for a year, along with special discounts and early access to events. Individual: $100, Family: $250.</p>
-                        <a href="#" class="btn btn-primary add-to-basket">Buy Tickets</a>
+                        <a href="#" class="btn btn-primary add-to-basket" data-ticket-type="Annual Pass" data-ticket-content='{"Individual": "$100", "Family": "$250"}'>Buy Tickets</a>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Notification Container -->
-    <div id="notification" class="notification" style="display: none;">Ticket added to the basket!</div>
+    <div id="ticket-options" class="ticket-options">
+        <span class="close">&times;</span>
+        <h4 id="ticket-type"></h4>
+        <form id="ticket-form">
+        </form>
+    </div>
+
+    <div id="overlay" class="overlay"></div>
 
     <!-- Optional JavaScript -->
-    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const buttons = document.querySelectorAll('.add-to-basket');
-            const notification = document.getElementById('notification');
-
+            const ticketOptions = document.getElementById('ticket-options');
+            const overlay = document.getElementById('overlay');
+            const closeBtn = ticketOptions.querySelector('.close');
+            const ticketTypeElem = document.getElementById('ticket-type');
+            const ticketForm = document.getElementById('ticket-form');
+    
             buttons.forEach(button => {
                 button.addEventListener('click', function(event) {
                     event.preventDefault();
-                    notification.style.display = 'block';
-                    setTimeout(() => {
-                        notification.style.display = 'none';
-                    }, 3000); // Hide notification after 3 seconds
+                    const ticketType = this.getAttribute('data-ticket-type');
+                    const ticketContent = JSON.parse(this.getAttribute('data-ticket-content'));
+    
+                    ticketTypeElem.textContent = ticketType;
+                    ticketForm.innerHTML = '';
+    
+                    for (const part in ticketContent) {
+                        const price = ticketContent[part];
+                        const formGroup = document.createElement('div');
+                        formGroup.className = 'form-group';
+                        formGroup.innerHTML = 
+                            `<label for="${part}">${part}: ${price}</label>
+                            <input type="number" id="${part}" name="${part}" min="0" value="0" class="form-control">`;
+                        ticketForm.appendChild(formGroup);
+                    }
+    
+                    const submitButton = document.createElement('button');
+                    submitButton.type = 'submit';
+                    submitButton.style = 'left: 25%;';
+                    submitButton.className = 'btn btn-primary';
+                    submitButton.textContent = 'Add to Basket';
+                    ticketForm.appendChild(submitButton);
+    
+                    ticketOptions.style.display = 'block';
+                    overlay.style.display = 'block'; 
                 });
+            });
+    
+            closeBtn.addEventListener('click', function() {
+                ticketOptions.style.display = 'none';
+                overlay.style.display = 'none';
+            });
+    
+            overlay.addEventListener('click', function() {
+                ticketOptions.style.display = 'none';
+                overlay.style.display = 'none'; 
+            });
+    
+            ticketForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                alert('Tickets added to the basket!');
+                ticketOptions.style.display = 'none';
+                overlay.style.display = 'none'; 
             });
         });
     </script>
