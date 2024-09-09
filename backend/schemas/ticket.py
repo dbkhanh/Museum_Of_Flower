@@ -18,7 +18,7 @@ class TicketCreate(BaseModel):
     basket_id: Optional[int] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class Ticket(TicketBase):
     ticket_id: int
