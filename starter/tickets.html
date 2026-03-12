@@ -48,7 +48,7 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navLinks">
-            <ul class="navbar-nav">
+            <ul class="navbar-nav mr-auto">
                 <li class="nav-item">
                     <a href="/static/home.html" class="nav-link">HOME</a>
                 </li>
@@ -59,8 +59,30 @@
                     <a href="/static/tickets.html" class="nav-link">TICKETS</a>
                 </li>
             </ul>
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a href="#" id="basket-icon" class="nav-link d-flex align-items-center" title="View basket">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <path d="M16 10a4 4 0 0 1-8 0"></path>
+                        </svg>
+                        <span id="basket-count" class="badge badge-pill badge-danger ml-1" style="display: none;">0</span>
+                    </a>
+                </li>
+            </ul>
         </div>
     </nav>
+
+    <div id="basket-modal" class="basket-modal" style="display: none;">
+        <div class="basket-modal-content">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Your Basket</h5>
+                <button id="basket-modal-close" class="btn btn-sm btn-outline-secondary">&times;</button>
+            </div>
+            <div id="basket-modal-body"></div>
+        </div>
+    </div>
 
     <section class="container">
         <div class="row justify-content-center">
@@ -110,6 +132,7 @@
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+    <script src="/static/basket.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const buttons = document.querySelectorAll('.add-to-basket');
@@ -118,18 +141,22 @@
             const closeBtn = ticketOptions.querySelector('.close');
             const ticketTypeElem = document.getElementById('ticket-type');
             const ticketForm = document.getElementById('ticket-form');
+
+            // Store current selection so submit handler can access it
+            let currentTicketType = null;
+            let currentTicketContent = null;
     
             buttons.forEach(button => {
                 button.addEventListener('click', function(event) {
                     event.preventDefault();
-                    const ticketType = this.getAttribute('data-ticket-type');
-                    const ticketContent = JSON.parse(this.getAttribute('data-ticket-content'));
+                    currentTicketType = this.getAttribute('data-ticket-type');
+                    currentTicketContent = JSON.parse(this.getAttribute('data-ticket-content'));
     
-                    ticketTypeElem.textContent = ticketType;
+                    ticketTypeElem.textContent = currentTicketType;
                     ticketForm.innerHTML = '';
     
-                    for (const part in ticketContent) {
-                        const price = ticketContent[part];
+                    for (const part in currentTicketContent) {
+                        const price = currentTicketContent[part];
                         const formGroup = document.createElement('div');
                         formGroup.className = 'form-group';
                         formGroup.innerHTML = 
@@ -160,13 +187,47 @@
                 overlay.style.display = 'none'; 
             });
     
-            ticketForm.addEventListener('submit', function(event) {
+            ticketForm.addEventListener('submit', async function(event) {
                 event.preventDefault();
-                alert('Tickets added to the basket!');
-                ticketOptions.style.display = 'none';
-                overlay.style.display = 'none'; 
+                if (!currentTicketType || !currentTicketContent) {
+                    alert('Please select a ticket type first.');
+                    return;
+                }
+                const submitBtn = ticketForm.querySelector('button[type="submit"]');
+                const items = [];
+                for (const part in currentTicketContent) {
+                    const input = document.getElementById(part);
+                    const qty = input ? input.value : 0;
+                    const priceStr = currentTicketContent[part];
+                    items.push({ label: part, quantity: qty, priceStr: priceStr });
+                }
+                const totalQty = items.reduce((sum, i) => sum + (parseInt(i.quantity, 10) || 0), 0);
+                if (totalQty === 0) {
+                    alert('Please enter at least one ticket.');
+                    return;
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Adding...';
+                }
+                try {
+                    await addTicketsToBasket(currentTicketType, items);
+                    alert('Tickets added to the basket!');
+                    ticketOptions.style.display = 'none';
+                    overlay.style.display = 'none';
+                } catch (err) {
+                    alert('Error: ' + (err.message || 'Could not add tickets.'));
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Add to Basket';
+                    }
+                }
             });
         });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', initBasketIcon);
     </script>
 </body>
 </html>

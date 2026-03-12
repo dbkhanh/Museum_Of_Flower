@@ -5,7 +5,13 @@ from backend.core.config import settings
 
 SQLALCHEMY_DATABASE_URL = settings.database_url
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+# SQLite needs check_same_thread=False when used with FastAPI's async/threading model
+# Otherwise requests can hang or fail with "SQLite objects created in a thread..."
+connect_args = {}
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    connect_args["check_same_thread"] = False
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

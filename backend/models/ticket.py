@@ -3,7 +3,6 @@ from sqlalchemy import Enum as SqlaEnum
 from backend.database import Base
 from datetime import datetime
 from enum import Enum
-from datetime import datetime
 
 class TicketType(Enum):
     GENERAL_ADMISSION = "General Admission"
@@ -23,6 +22,6 @@ class Ticket(Base):
     ticket_id = Column(Integer, primary_key=True, index=True)
     type = Column(SqlaEnum(TicketType), nullable=False)
     subtype = Column(SqlaEnum(TicketSubtype), nullable=False)
-    purchase_date = Column(DateTime, default=datetime, nullable=False)
+    purchase_date = Column(DateTime, default=datetime.now, nullable=False)
     price = Column(DECIMAL(5, 2), nullable=False)
     basket_id = Column(Integer, ForeignKey("baskets.basket_id"), nullable=True)
